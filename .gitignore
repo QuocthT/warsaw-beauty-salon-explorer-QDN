@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# SQLite — commit the seeded DB but ignore local scrape runs
+# data/salons.db   ← uncomment to gitignore (we DO want to commit the seed DB)
+
+# Kotlin / Gradle
+backend/.gradle/
+backend/build/
+backend/out/
+*.class
+
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.iml
