@@ -6,22 +6,29 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      # Mount the SQLite database so it persists and both services share it
+      # Shared SQLite DB — scraper writes here, backend reads/writes here
       - ./data:/app/data
     environment:
       - DB_PATH=/app/data/salons.db
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      # FIX: use wget — curl is not present in eclipse-temurin:17-jre-jammy by default
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 15s
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        # FIX: NEXT_PUBLIC_* vars are baked in at BUILD time by Next.js,
+        # not at runtime. Must be passed as build args, not environment.
+        # The browser talks to the backend via the host machine's localhost,
+        # so localhost:8080 is correct (ports are exposed to the host).
+        - NEXT_PUBLIC_API_URL=http://localhost:8080
     ports:
       - "3000:3000"
-    environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8080
     depends_on:
       backend:
         condition: service_healthy

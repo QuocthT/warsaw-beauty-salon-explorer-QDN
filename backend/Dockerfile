@@ -3,17 +3,17 @@ FROM gradle:8.5-jdk17 AS builder
 
 WORKDIR /app
 COPY . .
-RUN gradle shadowJar --no-daemon
+# FIX: use buildFatJar (Ktor's task) instead of shadowJar
+RUN gradle buildFatJar --no-daemon
 
 # ── Stage 2: Run ──────────────────────────────────────────────────────────────
-FROM eclipse-temurin:17-jre-alpine
+# FIX: use JRE slim (has wget) instead of alpine (no wget/curl)
+FROM eclipse-temurin:17-jre-jammy
 
 WORKDIR /app
 
-# Copy the fat JAR from the build stage
 COPY --from=builder /app/build/libs/salon-explorer.jar .
 
-# The data directory is mounted from docker-compose
 RUN mkdir -p /app/data
 
 EXPOSE 8080

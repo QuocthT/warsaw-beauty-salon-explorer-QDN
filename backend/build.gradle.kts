@@ -18,7 +18,7 @@ repositories {
     mavenCentral()
 }
 
-val ktorVersion   = "2.3.10"
+val ktorVersion    = "2.3.10"
 val exposedVersion = "0.44.1"
 val kotlinVersion  = "1.9.23"
 
@@ -50,7 +50,9 @@ tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "17"
 }
 
-// Fat JAR for Docker
-tasks.named<io.ktor.plugin.features.ShadowJar>("shadowJar") {
-    archiveFileName.set("salon-explorer.jar")
+// FIX: Use Ktor's built-in fatJar task (not shadowJar which requires a separate plugin)
+ktor {
+    fatJar {
+        archiveFileName.set("salon-explorer.jar")
+    }
 }
