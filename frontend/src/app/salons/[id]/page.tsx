@@ -15,6 +15,16 @@ import { PriceBadge } from "@/components/ui/PriceBadge"
 import { SourceBadge } from "@/components/ui/SourceBadge"
 import { EditModal } from "@/components/salon/EditModal"
 
+/** Ensure website values that are bare slugs get a proper base URL. */
+function normalizeWebsite(url: string | null, source?: string): string | null {
+  if (!url) return null
+  if (url.startsWith("http://") || url.startsWith("https://")) return url
+  // Booksy stores slugs like "297735_salon-name_warszawa" without a protocol
+  if (source === "booksy") return `https://booksy.com/pl-pl/${url}`
+  // Generic fallback — prepend https so the link at least opens
+  return `https://${url}`
+}
+
 export default function SalonDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router  = useRouter()
@@ -139,9 +149,9 @@ export default function SalonDetailPage() {
             )}
 
             {/* Website */}
-            {salon.website && (
+            {normalizeWebsite(salon.website, salon.source) && (
               <a
-                href={salon.website}
+                href={normalizeWebsite(salon.website, salon.source)!}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center gap-3 p-4 bg-white border border-border rounded-xl
@@ -150,7 +160,7 @@ export default function SalonDetailPage() {
                 <Globe size={16} className="text-rose shrink-0" />
                 <div className="flex-1 min-w-0">
                   <p className="text-xs text-muted uppercase tracking-wide mb-0.5">Website</p>
-                  <p className="text-sm text-ink truncate">{salon.website}</p>
+                  <p className="text-sm text-ink truncate">{normalizeWebsite(salon.website, salon.source)}</p>
                 </div>
                 <ExternalLink size={13} className="text-muted group-hover:text-rose shrink-0" />
               </a>

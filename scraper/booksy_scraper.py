@@ -195,12 +195,16 @@ def scrape_district(district_name: str, north: float, east: float,
                 rating, reviews  = extract_rating(biz)
                 district         = extract_district(biz, district_name)
 
+                raw_website = biz.get("url") or biz.get("website")
+                if raw_website and not raw_website.startswith("http"):
+                    raw_website = f"https://booksy.com/pl-pl/{raw_website}"
+
                 salon = {
                     "name":         name,
                     "address":      address,
                     "district":     district,
                     "phone":        biz.get("phone"),
-                    "website":      biz.get("url") or biz.get("website"),
+                    "website":      raw_website,
                     "services":     extract_services(biz),
                     "price_range":  extract_price_range(biz),
                     "rating":       rating,
