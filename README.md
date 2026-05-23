@@ -10,7 +10,9 @@ Built as part of the **SumUp Warsaw Accelerator 2026** take-home challenge.
 
 Click the image below to watch a 4-minute walkthrough of the Warsaw Beauty Salon Explorer, including the map view, data sources, and the text-filtering helper:
 
-[![Watch the video](https://cdn.loom.com/sessions/thumbnails/d853a5dc73c84e77b7fe0e0b27285a2f-with-play.gif)](https://www.loom.com/share/d853a5dc73c84e77b7fe0e0b27285a2f)
+[![Watch the video](https://cdn.loom.com/sessions/thumbnails/d853a5dc73c84e77b7fe0e0b27285a2f-with-play.jpg)](https://www.loom.com/share/d853a5dc73c84e77b7fe0e0b27285a2f)
+
+---
 
 ## 💭 Thoughts by Dave before technicalities
 
