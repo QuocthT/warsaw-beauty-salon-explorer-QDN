@@ -2,34 +2,36 @@
 
 import { useState, useCallback, useEffect, useRef } from "react"
 import useSWR from "swr"
-import { Scissors, ChevronLeft, ChevronRight } from "lucide-react"
+import { Scissors, ChevronLeft, ChevronRight, X, SearchX } from "lucide-react"
 import { buildSalonListUrl, swrFetcher } from "@/lib/api"
 import type { PagedResponse, SalonSummary } from "@/types/salon"
 import { SalonCard } from "@/components/salon/SalonCard"
+import { SalonCardSkeleton } from "@/components/salon/SalonCardSkeleton"
 import { Filters, type ViewMode } from "@/components/salon/Filters"
 import { MapView } from "@/components/salon/MapView"
 
 const PAGE_SIZE    = 20
-const MAP_MAX_SIZE = 1000   // fetch up to 1 000 pins in one go
+const MAP_MAX_SIZE = 5000   // fetch up to 5 000 pins in one go
 
 export default function HomePage() {
-  const [district, setDistrict] = useState("")
-  const [service,  setService]  = useState("")
-  const [search,   setSearch]   = useState("")
-  const [source,   setSource]   = useState("")
-  const [sort,     setSort]     = useState("reviews")   // backend default
-  const [page,     setPage]     = useState(1)
-  const [view,     setView]     = useState<ViewMode>("list")
+  const [district,  setDistrict]  = useState("")
+  const [service,   setService]   = useState("")
+  const [search,    setSearch]    = useState("")
+  const [source,    setSource]    = useState("")
+  const [sort,      setSort]      = useState("reviews")   // backend default
+  const [minRating, setMinRating] = useState(0)           // 0 = no rating filter
+  const [page,      setPage]      = useState(1)
+  const [view,      setView]      = useState<ViewMode>("list")
 
   // Once the user opens the map tab, we keep it mounted to avoid Leaflet's
   // "container already initialized" error on remount. We just show/hide it.
   const [hasViewedMap, setHasViewedMap] = useState(false)
 
   // Reset to page 1 when any filter/sort changes
-  useEffect(() => { setPage(1) }, [district, service, search, source, sort])
+  useEffect(() => { setPage(1) }, [district, service, search, source, sort, minRating])
 
   // ── List fetch (paginated) ────────────────────────────────────────────────
-  const listUrl = buildSalonListUrl({ district, service, search, source, sortBy: sort, page, pageSize: PAGE_SIZE })
+  const listUrl = buildSalonListUrl({ district, service, search, source, sortBy: sort, minRating, page, pageSize: PAGE_SIZE })
   const { data: listData, isLoading: listLoading } = useSWR<PagedResponse<SalonSummary>>(
     listUrl,
     swrFetcher,
@@ -40,7 +42,7 @@ export default function HomePage() {
   // Only starts fetching after the map tab is first opened.
   // SWR caches by URL, so subsequent filter changes re-use the cache.
   const mapUrl = hasViewedMap
-    ? buildSalonListUrl({ district, service, search, source, sortBy: sort, page: 1, pageSize: MAP_MAX_SIZE })
+    ? buildSalonListUrl({ district, service, search, source, sortBy: sort, minRating, page: 1, pageSize: MAP_MAX_SIZE })
     : null
   const { data: mapData, isLoading: mapLoading } = useSWR<PagedResponse<SalonSummary>>(
     mapUrl,
@@ -59,11 +61,12 @@ export default function HomePage() {
     listTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }, [page])
 
-  const handleDistrict = useCallback((v: string) => setDistrict(v), [])
-  const handleService  = useCallback((v: string) => setService(v),  [])
-  const handleSearch   = useCallback((v: string) => setSearch(v),   [])
-  const handleSource   = useCallback((v: string) => setSource(v),   [])
-  const handleSort     = useCallback((v: string) => setSort(v),     [])
+  const handleDistrict  = useCallback((v: string) => setDistrict(v),  [])
+  const handleService   = useCallback((v: string) => setService(v),   [])
+  const handleSearch    = useCallback((v: string) => setSearch(v),    [])
+  const handleSource    = useCallback((v: string) => setSource(v),    [])
+  const handleSort      = useCallback((v: string) => setSort(v),      [])
+  const handleMinRating = useCallback((v: number) => setMinRating(v), [])
 
   const handleViewChange = useCallback((v: ViewMode) => {
     if (v === "map") setHasViewedMap(true)
@@ -102,11 +105,13 @@ export default function HomePage() {
         search={search}
         source={source}
         sortBy={sort}
+        minRating={minRating}
         onDistrictChange={handleDistrict}
         onServiceChange={handleService}
         onSearchChange={handleSearch}
         onSourceChange={handleSource}
         onSortChange={handleSort}
+        onMinRatingChange={handleMinRating}
         total={view === "map" ? (mapData?.total ?? listData?.total ?? 0) : (listData?.total ?? 0)}
         view={view}
         onViewChange={handleViewChange}
@@ -133,25 +138,108 @@ export default function HomePage() {
         {/* ── LIST VIEW ───────────────────────────────────────────────────── */}
         {view === "list" && (
           <>
-            {/* Loading skeleton */}
+            {/* ── Skeleton: shown only on the very first fetch (no cached data yet) ── */}
             {listLoading && !listData && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                 {Array.from({ length: 12 }).map((_, i) => (
-                  <div key={i} className="bg-white border border-border rounded-xl p-5 animate-pulse">
-                    <div className="h-4 bg-border rounded w-3/4 mb-2" />
-                    <div className="h-3 bg-border rounded w-1/2 mb-4" />
-                    <div className="h-3 bg-border rounded w-1/3" />
-                  </div>
+                  <SalonCardSkeleton key={i} />
                 ))}
               </div>
             )}
 
-            {/* Empty state */}
+            {/* ── Empty state: search/filter returned zero results ── */}
             {!listLoading && listData?.data.length === 0 && (
-              <div className="text-center py-20">
-                <Scissors size={32} className="text-border mx-auto mb-4" />
-                <h3 className="font-display text-xl text-ink mb-2">No salons found</h3>
-                <p className="text-sm text-muted">Try adjusting your filters</p>
+              <div className="flex flex-col items-center py-24 text-center">
+                {/* Icon */}
+                <div className="w-16 h-16 rounded-full bg-cream border border-border flex items-center justify-center mb-5">
+                  <SearchX size={26} className="text-muted" />
+                </div>
+
+                <h3 className="font-display text-xl font-semibold text-ink mb-2">
+                  No salons found
+                </h3>
+
+                <p className="text-sm text-muted mb-6 max-w-xs">
+                  {search
+                    ? <>No results for <span className="font-medium text-ink">"{search}"</span>. Try a different name or service.</>
+                    : "No salons match your current filters. Try widening your search."}
+                </p>
+
+                {/* Active filter pills — tap any to clear just that filter */}
+                {(search || district || service || source || minRating > 0) && (
+                  <div className="flex flex-wrap gap-2 justify-center mb-6">
+                    {search && (
+                      <button
+                        onClick={() => handleSearch("")}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-cream
+                                   border border-border rounded-full hover:border-rose
+                                   hover:text-rose transition-colors"
+                      >
+                        <X size={11} />
+                        Search: &ldquo;{search}&rdquo;
+                      </button>
+                    )}
+                    {district && (
+                      <button
+                        onClick={() => handleDistrict("")}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-cream
+                                   border border-border rounded-full hover:border-rose
+                                   hover:text-rose transition-colors"
+                      >
+                        <X size={11} />
+                        {district}
+                      </button>
+                    )}
+                    {service && (
+                      <button
+                        onClick={() => handleService("")}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-cream
+                                   border border-border rounded-full hover:border-rose
+                                   hover:text-rose transition-colors"
+                      >
+                        <X size={11} />
+                        {service}
+                      </button>
+                    )}
+                    {source && (
+                      <button
+                        onClick={() => handleSource("")}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-cream
+                                   border border-border rounded-full hover:border-rose
+                                   hover:text-rose transition-colors"
+                      >
+                        <X size={11} />
+                        Source: {source}
+                      </button>
+                    )}
+                    {minRating > 0 && (
+                      <button
+                        onClick={() => handleMinRating(0)}
+                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-cream
+                                   border border-border rounded-full hover:border-rose
+                                   hover:text-rose transition-colors"
+                      >
+                        <X size={11} />
+                        ≥ {minRating.toFixed(1)} ★
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Clear-all CTA */}
+                <button
+                  onClick={() => {
+                    handleSearch("")
+                    handleDistrict("")
+                    handleService("")
+                    handleSource("")
+                    handleMinRating(0)
+                  }}
+                  className="px-5 py-2.5 text-sm bg-rose text-white rounded-lg
+                             hover:bg-rose/90 transition-colors"
+                >
+                  Clear all filters
+                </button>
               </div>
             )}
 

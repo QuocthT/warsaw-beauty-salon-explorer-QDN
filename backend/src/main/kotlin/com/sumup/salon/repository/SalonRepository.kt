@@ -19,7 +19,7 @@ class SalonRepository {
      * @param district  filter by exact district name (case-insensitive), or null for all
      * @param service   filter by substring match in the services field, or null for all
      * @param page      1-based page number
-     * @param pageSize  records per page (max 100)
+     * @param pageSize  records per page (max 2000)
      */
     fun listSalons(
         district: String?,
@@ -29,8 +29,9 @@ class SalonRepository {
         sortBy: String?,
         page: Int,
         pageSize: Int,
+        minRating: Double? = null,
     ): Pair<List<SalonSummary>, Int> = transaction {
-        val query = buildBaseQuery(district, service, search, source)
+        val query = buildBaseQuery(district, service, search, source, minRating)
 
         val total = query.count().toInt()
 
@@ -154,6 +155,7 @@ class SalonRepository {
         service: String?,
         search: String?,
         source: String?,
+        minRating: Double? = null,
     ): Query {
         var query: Query = SalonTable.selectAll()
 
@@ -186,6 +188,11 @@ class SalonRepository {
         // Exact source filter (e.g. "booksy", "google", "osm", "manual").
         source?.let {
             query = query.andWhere { SalonTable.dataSource eq it }
+        }
+
+        // Minimum rating filter — excludes NULLs and anything below the threshold.
+        minRating?.let { min ->
+            query = query.andWhere { SalonTable.rating greaterEq min }
         }
 
         return query

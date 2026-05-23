@@ -1,6 +1,6 @@
 "use client"
 
-import { Search, SlidersHorizontal, ArrowUpDown, Database, X, LayoutList, Map } from "lucide-react"
+import { Search, SlidersHorizontal, ArrowUpDown, Database, X, LayoutList, Map, Star } from "lucide-react"
 import useSWR from "swr"
 import { swrFetcher } from "@/lib/api"
 
@@ -44,11 +44,13 @@ interface FiltersProps {
   search: string
   source: string
   sortBy: string
-  onDistrictChange: (v: string) => void
-  onServiceChange:  (v: string) => void
-  onSearchChange:   (v: string) => void
-  onSourceChange:   (v: string) => void
-  onSortChange:     (v: string) => void
+  minRating: number
+  onDistrictChange:  (v: string) => void
+  onServiceChange:   (v: string) => void
+  onSearchChange:    (v: string) => void
+  onSourceChange:    (v: string) => void
+  onSortChange:      (v: string) => void
+  onMinRatingChange: (v: number) => void
   total: number
   view: ViewMode
   onViewChange: (v: ViewMode) => void
@@ -60,11 +62,13 @@ export function Filters({
   search,
   source,
   sortBy,
+  minRating,
   onDistrictChange,
   onServiceChange,
   onSearchChange,
   onSourceChange,
   onSortChange,
+  onMinRatingChange,
   total,
   view,
   onViewChange,
@@ -86,16 +90,17 @@ export function Filters({
     onSearchChange("")    // clear the text box
   }
 
-  // "Clear filters" button resets filters (district, service, search, source).
+  // "Clear filters" button resets filters (district, service, search, source, minRating).
   // Sort order is a preference — intentionally not cleared.
   const handleClearAll = () => {
     onDistrictChange("")
     onServiceChange("")
     onSearchChange("")
     onSourceChange("")
+    onMinRatingChange(0)
   }
 
-  const hasFilters = district || service || search || source
+  const hasFilters = district || service || search || source || minRating > 0
 
   return (
     <div className="bg-white border-b border-border sticky top-0 z-10">
@@ -186,6 +191,30 @@ export function Filters({
                 <option key={value} value={value}>{label}</option>
               ))}
             </select>
+          </div>
+
+          {/* ── Rating slider ── */}
+          <div className="flex items-center gap-2 shrink-0 bg-cream border border-border rounded-lg px-3 py-1.5">
+            <Star
+              size={13}
+              className={minRating > 0 ? "text-rose fill-rose shrink-0" : "text-muted shrink-0"}
+            />
+            <input
+              type="range"
+              min={0}
+              max={5}
+              step={0.5}
+              value={minRating}
+              onChange={(e) => onMinRatingChange(Number(e.target.value))}
+              className="w-24 h-1.5 cursor-pointer accent-rose"
+              aria-label="Minimum rating filter"
+            />
+            <span className={[
+              "text-xs font-medium tabular-nums min-w-[44px] text-right",
+              minRating > 0 ? "text-rose" : "text-muted",
+            ].join(" ")}>
+              {minRating === 0 ? "Any ★" : `${minRating.toFixed(1)}+ ★`}
+            </span>
           </div>
 
           {/* ── List / Map toggle ── */}

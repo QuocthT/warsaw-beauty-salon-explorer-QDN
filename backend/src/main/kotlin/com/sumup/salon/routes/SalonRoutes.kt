@@ -22,19 +22,22 @@ fun Route.salonRoutes(repo: SalonRepository) {
          *   service   — filter by service substring from chip selection (e.g. "Barber")
          *   search    — free-text search matching name OR services (e.g. "dorota")
          *   page      — page number, default 1
-         *   pageSize  — records per page, default 20, max 100
+         *   pageSize  — records per page, default 20, max 5000
          */
         get {
-            val district = call.request.queryParameters["district"]?.takeIf { it.isNotBlank() }
-            val service  = call.request.queryParameters["service"]?.takeIf { it.isNotBlank() }
-            val search   = call.request.queryParameters["search"]?.takeIf { it.isNotBlank() }
-            val source   = call.request.queryParameters["source"]?.takeIf { it.isNotBlank() }
-            val sortBy   = call.request.queryParameters["sortBy"]?.takeIf { it.isNotBlank() }
-            val page     = call.request.queryParameters["page"]?.toIntOrNull()?.coerceAtLeast(1) ?: 1
-            val pageSize = call.request.queryParameters["pageSize"]?.toIntOrNull()
-                ?.coerceIn(1, 100) ?: 20
+            val district  = call.request.queryParameters["district"]?.takeIf { it.isNotBlank() }
+            val service   = call.request.queryParameters["service"]?.takeIf { it.isNotBlank() }
+            val search    = call.request.queryParameters["search"]?.takeIf { it.isNotBlank() }
+            val source    = call.request.queryParameters["source"]?.takeIf { it.isNotBlank() }
+            val sortBy    = call.request.queryParameters["sortBy"]?.takeIf { it.isNotBlank() }
+            val minRating = call.request.queryParameters["minRating"]?.toDoubleOrNull()
+                ?.coerceIn(0.0, 5.0)
+                ?.takeIf { it > 0.0 }
+            val page      = call.request.queryParameters["page"]?.toIntOrNull()?.coerceAtLeast(1) ?: 1
+            val pageSize  = call.request.queryParameters["pageSize"]?.toIntOrNull()
+                ?.coerceIn(1, 5000) ?: 20
 
-            val (salons, total) = repo.listSalons(district, service, search, source, sortBy, page, pageSize)
+            val (salons, total) = repo.listSalons(district, service, search, source, sortBy, page, pageSize, minRating)
 
             call.respond(
                 PagedResponse(

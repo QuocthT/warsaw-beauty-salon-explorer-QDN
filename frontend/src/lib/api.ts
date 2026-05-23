@@ -22,6 +22,7 @@ export interface ListParams {
   search?: string    // free-text: matches name OR services
   source?: string    // data-source filter: "booksy" | "google" | "osm" | "manual"
   sortBy?: string    // sort order: "reviews" (default) | "rating" | "name"
+  minRating?: number // minimum rating threshold (0 = no filter)
   page?: number
   pageSize?: number
 }
@@ -35,6 +36,7 @@ export function buildSalonListUrl(params: ListParams): string {
   // Only send sortBy when it differs from the backend default ("reviews") so
   // existing bookmarks without the param continue to show the right order.
   if (params.sortBy && params.sortBy !== "reviews") q.set("sortBy", params.sortBy)
+  if (params.minRating && params.minRating > 0) q.set("minRating", String(params.minRating))
   if (params.page)     q.set("page",     String(params.page))
   if (params.pageSize) q.set("pageSize", String(params.pageSize))
   const qs = q.toString()
