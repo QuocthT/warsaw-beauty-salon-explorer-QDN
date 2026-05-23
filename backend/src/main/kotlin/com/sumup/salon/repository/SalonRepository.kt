@@ -24,16 +24,28 @@ class SalonRepository {
     fun listSalons(
         district: String?,
         service: String?,
+        search: String?,
+        source: String?,
+        sortBy: String?,
         page: Int,
         pageSize: Int,
     ): Pair<List<SalonSummary>, Int> = transaction {
-        val query = buildBaseQuery(district, service)
+        val query = buildBaseQuery(district, service, search, source)
 
         val total = query.count().toInt()
 
+        // "reviews" (default) → most-reviewed first so first-page looks credible.
+        // "rating"            → highest-rated first.
+        // "name"              → alphabetical A–Z.
+        val order: Pair<Column<*>, SortOrder> = when (sortBy) {
+            "rating" -> SalonTable.rating      to SortOrder.DESC_NULLS_LAST
+            "name"   -> SalonTable.name        to SortOrder.ASC
+            else     -> SalonTable.reviewCount to SortOrder.DESC_NULLS_LAST
+        }
+
         val offset = ((page - 1) * pageSize).toLong()
         val rows = query
-            .orderBy(SalonTable.rating to SortOrder.DESC_NULLS_LAST)
+            .orderBy(order)
             .limit(pageSize, offset)
             .toList()
 
@@ -62,6 +74,38 @@ class SalonRepository {
             .withDistinct()
             .map { it[SalonTable.district] }
             .sorted()
+    }
+
+    /**
+     * Returns the top-20 service tokens by frequency.
+     *
+     * Each row's `services` column is a comma-separated string
+     * (e.g. "Fryzjer, Barber"). This method splits on "," , trims
+     * whitespace, deduplicates across all rows, and returns the tokens
+     * sorted by how many salons offer them — most common first.
+     *
+     * Used by the frontend to populate the service chip row.
+     */
+    fun listServices(): List<String> = transaction {
+        exec(
+            "SELECT services FROM salons WHERE services IS NOT NULL AND services != ''"
+        ) { rs ->
+            val tokens = mutableListOf<String>()
+            while (rs.next()) {
+                rs.getString(1)
+                    .split(",")
+                    .map { it.trim() }
+                    .filter { it.isNotEmpty() }
+                    .forEach { tokens.add(it) }
+            }
+            tokens
+                .groupingBy { it }
+                .eachCount()
+                .entries
+                .sortedByDescending { it.value }
+                .take(20)
+                .map { it.key }
+        } ?: emptyList()
     }
 
     // -------------------------------------------------------------------------
@@ -105,7 +149,12 @@ class SalonRepository {
     // Private helpers
     // -------------------------------------------------------------------------
 
-    private fun buildBaseQuery(district: String?, service: String?): Query {
+    private fun buildBaseQuery(
+        district: String?,
+        service: String?,
+        search: String?,
+        source: String?,
+    ): Query {
         var query: Query = SalonTable.selectAll()
 
         district?.let {
@@ -114,10 +163,29 @@ class SalonRepository {
             }
         }
 
+        // Chip-selected service: match services column OR name, so salons whose
+        // type was inferred from their name (e.g. "FF Barber shop") are found
+        // even when their services column is empty.
         service?.let {
+            val term = "%${it.lowercase()}%"
             query = query.andWhere {
-                SalonTable.services.lowerCase() like "%${it.lowercase()}%"
+                (SalonTable.services.lowerCase() like term) or
+                (SalonTable.name.lowerCase() like term)
             }
+        }
+
+        // Free-text search: match name OR services (broader, user-typed query).
+        search?.let {
+            val term = "%${it.lowercase()}%"
+            query = query.andWhere {
+                (SalonTable.name.lowerCase() like term) or
+                (SalonTable.services.lowerCase() like term)
+            }
+        }
+
+        // Exact source filter (e.g. "booksy", "google", "osm", "manual").
+        source?.let {
+            query = query.andWhere { SalonTable.dataSource eq it }
         }
 
         return query
@@ -133,6 +201,8 @@ class SalonRepository {
         priceRange  = this[SalonTable.priceRange],
         services    = this[SalonTable.services],
         source      = this[SalonTable.dataSource],
+        latitude    = this[SalonTable.latitude],
+        longitude   = this[SalonTable.longitude],
     )
 
     private fun ResultRow.toDetail() = SalonDetail(

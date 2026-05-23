@@ -5,6 +5,7 @@ import kotlinx.serialization.Serializable
 /**
  * Lightweight DTO returned in the listing page.
  * Keeps the list response small — only the fields the UI needs at a glance.
+ * lat/lng are included so the map view can render pins without a detail fetch.
  */
 @Serializable
 data class SalonSummary(
@@ -17,6 +18,8 @@ data class SalonSummary(
     val priceRange: String?,
     val services: String?,
     val source: String,
+    val latitude: Double?,
+    val longitude: Double?,
 )
 
 /**

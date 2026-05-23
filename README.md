@@ -6,11 +6,9 @@ Built as part of the **SumUp Warsaw Accelerator 2026** take-home challenge.
 
 ---
 
-## 📸 Screenshots
+## 🎬 Demo
 
-> _Add screenshots of the running app here before submission_
-
----
+[![Warsaw Beauty Salon Explorer Demo](https://cdn.loom.com/sessions/thumbnails/YOUR_LOOM_ID-with-play.gif)](https://www.loom.com/share/YOUR_LOOM_ID)
 
 ## 🗂️ Project Structure
 
@@ -216,42 +214,47 @@ The current architecture handles Warsaw (~200 salons). To cover all of Poland (~
 
 ---
 
-## 📋 Data Quality
+## 📊 Data Quality
 
-After scraping and cleaning, the dataset has:
+After scraping and cleaning, the dataset has **3,950 salons** across Warsaw.
 
-─── Data Quality Report ─────────────────────────────
-Total salons: 3950
+### Missing Data
 
-  Missing phone             ████████████░░░░░░░░ 2557/3950 (65%)
-  Missing website           ████████░░░░░░░░░░░░ 1667/3950 (42%)
-  Missing services          ████████████░░░░░░░░ 2450/3950 (62%)
-  Missing price_range       ███████████████████░ 3937/3950 (100%)
-  Missing rating            ███████░░░░░░░░░░░░░ 1483/3950 (38%)
-  Missing coordinates       ░░░░░░░░░░░░░░░░░░░░ 0/3950 (0%)
+| Field | Missing | Coverage |
+|-------|---------|----------|
+| `price_range` | 3937 / 3950 | 0% ⚠️ |
+| `phone` | 2557 / 3950 | 35% |
+| `services` | 2450 / 3950 | 38% |
+| `website` | 1667 / 3950 | 58% |
+| `rating` | 1483 / 3950 | 62% |
+| `coordinates` | 0 / 3950 | 100% ✅ |
 
-  By source:
-    osm          1368
-    booksy       1305
-    google       1264
-    manual       13
+### Sources
 
-  Top 10 districts:
-    Śródmieście                    547
-    Mokotów                        461
-    Ursynów                        356
-    Praga-Południe                 313
-    Białołęka                      238
-    Wola                           211
-    Bemowo                         209
-    Targówek                       205
-    Ursus                          201
-    Bielany                        172
-─────────────────────────────────────────────────────
+| Source | Count |
+|--------|-------|
+| OSM | 1,368 |
+| Booksy | 1,305 |
+| Google | 1,264 |
+| Manual | 13 |
 
-**Known gap:** Price range data is not available in Booksy's current `/core/v2/customer_api/businesses/` API response. Would require individual business detail requests to retrieve.
+### Top 10 Districts
 
-Run `python scraper/clean.py` at any time to regenerate the quality report.
+| District | Salons |
+|----------|--------|
+| Śródmieście | 547 |
+| Mokotów | 461 |
+| Ursynów | 356 |
+| Praga-Południe | 313 |
+| Białołęka | 238 |
+| Wola | 211 |
+| Bemowo | 209 |
+| Targówek | 205 |
+| Ursus | 201 |
+| Bielany | 172 |
+
+> **Known gap:** `price_range` is unavailable from Booksy's `/core/v2/customer_api/businesses/` endpoint — individual business detail requests would be needed.  
+> Run `python scraper/clean.py` to regenerate this report.
 
 ---
 

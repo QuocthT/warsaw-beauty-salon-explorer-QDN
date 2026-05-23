@@ -19,18 +19,22 @@ fun Route.salonRoutes(repo: SalonRepository) {
          *
          * Query params:
          *   district  — filter by district name (e.g. "Mokotów")
-         *   service   — filter by service substring (e.g. "barber")
+         *   service   — filter by service substring from chip selection (e.g. "Barber")
+         *   search    — free-text search matching name OR services (e.g. "dorota")
          *   page      — page number, default 1
          *   pageSize  — records per page, default 20, max 100
          */
         get {
             val district = call.request.queryParameters["district"]?.takeIf { it.isNotBlank() }
             val service  = call.request.queryParameters["service"]?.takeIf { it.isNotBlank() }
+            val search   = call.request.queryParameters["search"]?.takeIf { it.isNotBlank() }
+            val source   = call.request.queryParameters["source"]?.takeIf { it.isNotBlank() }
+            val sortBy   = call.request.queryParameters["sortBy"]?.takeIf { it.isNotBlank() }
             val page     = call.request.queryParameters["page"]?.toIntOrNull()?.coerceAtLeast(1) ?: 1
             val pageSize = call.request.queryParameters["pageSize"]?.toIntOrNull()
                 ?.coerceIn(1, 100) ?: 20
 
-            val (salons, total) = repo.listSalons(district, service, page, pageSize)
+            val (salons, total) = repo.listSalons(district, service, search, source, sortBy, page, pageSize)
 
             call.respond(
                 PagedResponse(
@@ -42,13 +46,27 @@ fun Route.salonRoutes(repo: SalonRepository) {
             )
         }
 
+        // ── Static sub-routes ──────────────────────────────────────────────
+        // ALL static sub-routes must be declared BEFORE /{id}.
+        // Ktor evaluates routes top-to-bottom; if /{id} comes first it
+        // swallows literals like "districts" and "services" as the id param,
+        // returning a 400/404 instead of the intended response.
+
         /**
          * GET /api/salons/districts
          * Returns all distinct district names — used to populate the filter dropdown.
-         * Must be declared BEFORE /{id} so it isn't captured as an id param.
          */
         get("/districts") {
             call.respond(repo.listDistricts())
+        }
+
+        /**
+         * GET /api/salons/services
+         * Returns the top-20 service tokens by frequency — used to populate
+         * the service chip row on the listing page.
+         */
+        get("/services") {
+            call.respond(repo.listServices())
         }
 
         /**

@@ -9,6 +9,8 @@ export interface SalonSummary {
   priceRange: string | null
   services: string | null
   source: string
+  latitude: number | null
+  longitude: number | null
 }
 
 // Mirrors Kotlin's SalonDetail — used on the detail page

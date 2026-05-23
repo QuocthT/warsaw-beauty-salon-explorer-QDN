@@ -18,7 +18,10 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
 export interface ListParams {
   district?: string
-  service?: string
+  service?: string   // chip-selected service filter
+  search?: string    // free-text: matches name OR services
+  source?: string    // data-source filter: "booksy" | "google" | "osm" | "manual"
+  sortBy?: string    // sort order: "reviews" (default) | "rating" | "name"
   page?: number
   pageSize?: number
 }
@@ -27,6 +30,11 @@ export function buildSalonListUrl(params: ListParams): string {
   const q = new URLSearchParams()
   if (params.district) q.set("district", params.district)
   if (params.service)  q.set("service",  params.service)
+  if (params.search)   q.set("search",   params.search)
+  if (params.source)   q.set("source",   params.source)
+  // Only send sortBy when it differs from the backend default ("reviews") so
+  // existing bookmarks without the param continue to show the right order.
+  if (params.sortBy && params.sortBy !== "reviews") q.set("sortBy", params.sortBy)
   if (params.page)     q.set("page",     String(params.page))
   if (params.pageSize) q.set("pageSize", String(params.pageSize))
   const qs = q.toString()
@@ -43,6 +51,10 @@ export function fetchSalon(id: number): Promise<SalonDetail> {
 
 export function fetchDistricts(): Promise<string[]> {
   return apiFetch("/api/salons/districts")
+}
+
+export function fetchServices(): Promise<string[]> {
+  return apiFetch("/api/salons/services")
 }
 
 export function updateSalon(id: number, data: SalonUpdateRequest): Promise<SalonDetail> {
