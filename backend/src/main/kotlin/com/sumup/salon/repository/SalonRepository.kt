@@ -30,8 +30,9 @@ class SalonRepository {
         page: Int,
         pageSize: Int,
         minRating: Double? = null,
+        minReviews: Int? = null,
     ): Pair<List<SalonSummary>, Int> = transaction {
-        val query = buildBaseQuery(district, service, search, source, minRating)
+        val query = buildBaseQuery(district, service, search, source, minRating, minReviews)
 
         val total = query.count().toInt()
 
@@ -156,6 +157,7 @@ class SalonRepository {
         search: String?,
         source: String?,
         minRating: Double? = null,
+        minReviews: Int? = null,
     ): Query {
         var query: Query = SalonTable.selectAll()
 
@@ -193,6 +195,12 @@ class SalonRepository {
         // Minimum rating filter — excludes NULLs and anything below the threshold.
         minRating?.let { min ->
             query = query.andWhere { SalonTable.rating greaterEq min }
+        }
+
+        // Minimum review count — filters out statistically unreliable ratings
+        // (e.g. a single 5-star review inflating the score).
+        minReviews?.let { min ->
+            query = query.andWhere { SalonTable.reviewCount greaterEq min }
         }
 
         return query

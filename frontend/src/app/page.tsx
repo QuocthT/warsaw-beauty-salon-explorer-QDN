@@ -8,6 +8,7 @@ import type { PagedResponse, SalonSummary } from "@/types/salon"
 import { SalonCard } from "@/components/salon/SalonCard"
 import { SalonCardSkeleton } from "@/components/salon/SalonCardSkeleton"
 import { Filters, type ViewMode } from "@/components/salon/Filters"
+import { SalonHelper } from "@/components/salon/SalonHelper"
 import { MapView } from "@/components/salon/MapView"
 
 const PAGE_SIZE    = 20
@@ -30,8 +31,12 @@ export default function HomePage() {
   // Reset to page 1 when any filter/sort changes
   useEffect(() => { setPage(1) }, [district, service, search, source, sort, minRating])
 
+  // When sorting by rating, require at least 5 reviews so a single 5-star
+  // review can't push a salon to the top. Has no effect on other sort modes.
+  const minReviews = sort === "rating" ? 5 : 0
+
   // ── List fetch (paginated) ────────────────────────────────────────────────
-  const listUrl = buildSalonListUrl({ district, service, search, source, sortBy: sort, minRating, page, pageSize: PAGE_SIZE })
+  const listUrl = buildSalonListUrl({ district, service, search, source, sortBy: sort, minRating, minReviews, page, pageSize: PAGE_SIZE })
   const { data: listData, isLoading: listLoading } = useSWR<PagedResponse<SalonSummary>>(
     listUrl,
     swrFetcher,
@@ -42,7 +47,7 @@ export default function HomePage() {
   // Only starts fetching after the map tab is first opened.
   // SWR caches by URL, so subsequent filter changes re-use the cache.
   const mapUrl = hasViewedMap
-    ? buildSalonListUrl({ district, service, search, source, sortBy: sort, minRating, page: 1, pageSize: MAP_MAX_SIZE })
+    ? buildSalonListUrl({ district, service, search, source, sortBy: sort, minRating, minReviews, page: 1, pageSize: MAP_MAX_SIZE })
     : null
   const { data: mapData, isLoading: mapLoading } = useSWR<PagedResponse<SalonSummary>>(
     mapUrl,
@@ -97,6 +102,8 @@ export default function HomePage() {
           </p>
         </div>
       </header>
+
+      <SalonHelper />
 
       {/* ── Sticky filters ──────────────────────────────────────────────── */}
       <Filters
