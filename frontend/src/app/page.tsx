@@ -55,8 +55,14 @@ export default function HomePage() {
     { keepPreviousData: true },
   )
 
+  // ── Unfiltered total (for the hero subtitle — never changes with filters) ──
+  const { data: totalData } = useSWR<PagedResponse<SalonSummary>>(
+    buildSalonListUrl({ page: 1, pageSize: 1 }),
+    swrFetcher,
+  )
+  const headerTotal = totalData?.total ?? "—"
+
   const totalPages = listData ? Math.ceil(listData.total / PAGE_SIZE) : 0
-  const headerTotal = listData?.total ?? "—"
 
   // Scroll the list top into view when the page changes (skip the very first render).
   const listTopRef = useRef<HTMLDivElement>(null)

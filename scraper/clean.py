@@ -109,9 +109,9 @@ def similarity(a: str, b: str) -> float:
 def find_duplicate_pairs(conn: sqlite3.Connection) -> list[tuple[int, int]]:
     """
     Returns list of (keep_id, drop_id) pairs where drop_id should be merged into keep_id.
-    'keep' is the record with more data (higher source priority: booksy > google > osm > manual).
+    'keep' is the record with more data (higher source priority: booksy > google > osm).
     """
-    source_priority = {"booksy": 0, "google": 1, "osm": 2, "manual": 3}
+    source_priority = {"booksy": 0, "google": 1, "osm": 2}
 
     rows = conn.execute(
         "SELECT id, name, address, source FROM salons ORDER BY id"

@@ -2,13 +2,16 @@ package com.sumup.salon.routes
 
 import com.sumup.salon.models.ApiError
 import com.sumup.salon.models.PagedResponse
-import com.sumup.salon.models.SalonUpdateRequest
 import com.sumup.salon.repository.SalonRepository
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.intOrNull
 
 fun Route.salonRoutes(repo: SalonRepository) {
 
@@ -111,14 +114,16 @@ fun Route.salonRoutes(repo: SalonRepository) {
                     ApiError("BAD_REQUEST", "id must be an integer"),
                 )
 
-            val req = runCatching { call.receive<SalonUpdateRequest>() }.getOrElse {
+            // Receive as raw JsonObject so we can distinguish
+            // absent keys ("don't touch") from explicit null ("clear the field").
+            val body = runCatching { call.receive<JsonObject>() }.getOrElse {
                 return@patch call.respond(
                     HttpStatusCode.BadRequest,
                     ApiError("BAD_REQUEST", "Invalid request body: ${it.message}"),
                 )
             }
 
-            val updated = repo.updateSalon(id, req)
+            val updated = repo.updateSalonFromJson(id, body)
                 ?: return@patch call.respond(
                     HttpStatusCode.NotFound,
                     ApiError("NOT_FOUND", "Salon with id=$id not found"),

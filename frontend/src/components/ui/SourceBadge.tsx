@@ -4,14 +4,12 @@ const SOURCE_LABELS: Record<string, string> = {
   booksy: "Booksy",
   google: "Google",
   osm:    "OpenStreetMap",
-  manual: "Community",
 }
 
 const SOURCE_COLORS: Record<string, string> = {
   booksy: "bg-purple-100 text-purple-700 border-purple-200",
   google: "bg-blue-100 text-blue-700 border-blue-200",
   osm:    "bg-green-100 text-green-700 border-green-200",
-  manual: "bg-amber-100 text-amber-700 border-amber-200",
 }
 
 interface SourceBadgeProps {

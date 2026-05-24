@@ -40,7 +40,7 @@ def init_db():
                 review_count    INTEGER,
 
                 -- Source tracking
-                source          TEXT NOT NULL,   -- 'booksy' | 'google' | 'osm' | 'manual'
+                source          TEXT NOT NULL,   -- 'booksy' | 'google' | 'osm'
                 source_id       TEXT,            -- external ID from that platform
                 source_url      TEXT,
 

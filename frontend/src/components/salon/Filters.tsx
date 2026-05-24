@@ -22,7 +22,6 @@ const SOURCE_OPTIONS: { label: string; value: string }[] = [
   { label: "Booksy",        value: "booksy"  },
   { label: "Google",        value: "google"  },
   { label: "OpenStreetMap", value: "osm"     },
-  { label: "Community",     value: "manual"  },
 ]
 
 const SERVICE_CHIPS: { label: string; value: string }[] = [

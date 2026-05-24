@@ -20,7 +20,7 @@ export interface ListParams {
   district?: string
   service?: string    // chip-selected service filter
   search?: string     // free-text: matches name OR services
-  source?: string     // data-source filter: "booksy" | "google" | "osm" | "manual"
+  source?: string     // data-source filter: "booksy" | "google" | "osm"
   sortBy?: string     // sort order: "reviews" (default) | "rating" | "name"
   minRating?: number  // minimum rating threshold (0 = no filter)
   minReviews?: number // minimum review count — filters statistically unreliable ratings

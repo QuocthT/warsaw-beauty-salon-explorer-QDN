@@ -3,6 +3,11 @@ package com.sumup.salon.repository
 import com.sumup.salon.models.SalonDetail
 import com.sumup.salon.models.SalonSummary
 import com.sumup.salon.models.SalonUpdateRequest
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -147,6 +152,40 @@ class SalonRepository {
             .toDetail()
     }
 
+    /**
+     * Partially updates a salon from a raw JSON body.
+     *
+     * Keys present in [body] are applied — even if their value is JSON null
+     * (which clears the field).  Keys absent from [body] are left untouched.
+     * This correctly implements PATCH semantics that the typed-DTO version
+     * could not, because Kotlin cannot distinguish absent vs explicit null
+     * when deserializing into a data class with nullable defaults.
+     */
+    fun updateSalonFromJson(id: Int, body: JsonObject): SalonDetail? = transaction {
+        val exists = SalonTable.select { SalonTable.id eq id }.count() > 0
+        if (!exists) return@transaction null
+
+        SalonTable.update({ SalonTable.id eq id }) { stmt ->
+            // Helper: null JSON element → Kotlin null; primitive → its string value
+            fun strOrNull(key: String): String? =
+                if (body[key] is JsonNull) null
+                else body[key]?.jsonPrimitive?.content
+
+            if ("name"        in body) body["name"]?.jsonPrimitive?.content?.let { stmt[SalonTable.name]        = it }
+            if ("address"     in body) body["address"]?.jsonPrimitive?.content?.let { stmt[SalonTable.address]  = it }
+            if ("district"    in body) body["district"]?.jsonPrimitive?.content?.let { stmt[SalonTable.district] = it }
+            if ("phone"       in body) stmt[SalonTable.phone]       = strOrNull("phone")
+            if ("website"     in body) stmt[SalonTable.website]     = strOrNull("website")
+            if ("services"    in body) stmt[SalonTable.services]    = strOrNull("services")
+            if ("priceRange"  in body) stmt[SalonTable.priceRange]  = strOrNull("priceRange")
+            if ("rating"      in body) stmt[SalonTable.rating]      = if (body["rating"] is JsonNull) null else body["rating"]?.jsonPrimitive?.doubleOrNull
+            if ("reviewCount" in body) stmt[SalonTable.reviewCount] = if (body["reviewCount"] is JsonNull) null else body["reviewCount"]?.jsonPrimitive?.intOrNull
+            stmt[SalonTable.updatedAt] = java.time.LocalDateTime.now().toString()
+        }
+
+        SalonTable.select { SalonTable.id eq id }.single().toDetail()
+    }
+
     // -------------------------------------------------------------------------
     // Private helpers
     // -------------------------------------------------------------------------
@@ -187,7 +226,7 @@ class SalonRepository {
             }
         }
 
-        // Exact source filter (e.g. "booksy", "google", "osm", "manual").
+        // Exact source filter (e.g. "booksy", "google", "osm").
         source?.let {
             query = query.andWhere { SalonTable.dataSource eq it }
         }

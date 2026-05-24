@@ -5,8 +5,7 @@ Order:
   1. OSM       — free baseline, no key needed
   2. Booksy    — primary source, richest data
   3. Google    — gap-fill + ratings (needs GOOGLE_API_KEY)
-  4. Manual    — community/off-platform salons
-  5. Clean     — normalise + dedup + quality report
+  4. Clean     — normalise + dedup + quality report
 
 Usage:
   # Without Google:
@@ -32,7 +31,6 @@ STEPS = [
     ("osm",    "osm_scraper",            None),
     ("booksy", "booksy_scraper",         None),
     ("google", "google_places_scraper",  "GOOGLE_API_KEY"),
-    ("manual", "manual_salons",          None),
     ("clean",  "clean",                  None),
 ]
 

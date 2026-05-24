@@ -18,48 +18,31 @@ Click the image below to watch a 4-minute walkthrough of the Warsaw Beauty Salon
 
 ### Who actually needs this?
 
-Warsaw has seen a sharp influx of newcomers over the last few years — most notably **Ukrainian** and **Vietnamese** communities, both of which are among the largest immigrant groups in Poland today. Many of these people are:
+Warsaw has changed a lot in the last few years. There's a huge Ukrainian community here now, and a well-established Vietnamese one too — and both of them are kind of underserved when it comes to finding beauty services. A lot of people from these communities are opening salons, doing nails or lashes from home, or looking for someone who speaks their language and knows their hair. None of that really shows up on Booksy or Google Maps.
 
-- Opening new salons (often informal, home-based, or community-run)
-- Searching for salons that speak their language and understand their hair/beauty needs
-- Completely **invisible on mainstream Polish platforms** like Booksy, Google Maps, or Yelp
+The thing is, they're not looking on those platforms anyway. They're on Facebook.
 
-These communities don't discover services the way Polish locals do. They rely on **Facebook — heavily.**
+### Facebook is where this all happens
 
-### Facebook is where these communities live
+I spent some time going through groups like *"Ukraińcy w Warszawie"* (300k+ members) and *"Wietnamczycy w Polsce"* and it was eye-opening. These groups are basically the town square — people ask for salon recommendations, someone replies with a phone number or a profile link, done. No Booksy listing, no Google review, just word of mouth inside the group.
 
-Ukrainian and Vietnamese diaspora groups on Facebook in Warsaw are enormous and highly active:
+So a big chunk of the salons that matter most to these communities are completely invisible to any scraper.
 
-- **"Ukraińcy w Warszawie"** — one of the largest immigrant Facebook groups in Poland, with **300,000+ members**, used daily for business recommendations, housing, jobs, and beauty services
-- **"Wietnamczycy w Polsce / Vietnamese in Poland"** — thousands of members sharing recommendations in Vietnamese
-- Meta's own 2023 data shows Facebook penetration in Ukraine sits at **~65% of the population** — among the highest in Eastern Europe — and this behavior carries over strongly into the diaspora
-- Vietnamese Facebook usage is similarly dominant: Vietnam has **~70 million Facebook users** (2024), making it one of the top-10 countries by usage globally — a habit that migrates with the community
+### The courses thing
 
-> In short: if a Ukrainian or Vietnamese person in Warsaw is looking for a nail salon that speaks their language, **they ask in a Facebook group**, not on Google.
+While I was going through these groups I kept seeing something I didn't expect — posts advertising short beauty courses. Nail art, lash extensions, brow lamination, that kind of thing. Usually someone running a small studio or a recently-arrived instructor trying to build up students. Posts in Ukrainian or Vietnamese, priced pretty accessibly, and they'd get a bunch of replies within hours.
+
+There's clearly a whole ecosystem of this that just doesn't exist anywhere structured. No platform covers it. That's what gave me the idea for the Courses section in the improvements list below.
 
 ### Why we can't just scrape Facebook
 
-The obvious next question is: *why not pull data from these Facebook groups?*
+The short answer: it's against their ToS and it raises real GDPR issues. Facebook [explicitly prohibits](https://www.facebook.com/terms.php) automated data collection, and in the EU, scraping personal data from group posts — names, phone numbers, photos — is the kind of thing that gets companies in serious trouble. Meta has gone after scrapers legally and won.
 
-The answer is **legal**, not technical.
+So that data gap stays a gap. The workaround I'd go with is a community submission form — let instructors and salon owners post themselves.
 
-Facebook's Terms of Service ([Section 3.2](https://www.facebook.com/terms.php)) explicitly prohibit:
+### Mobile-first makes sense here
 
-> *"collect users' content or information, or otherwise access Facebook, using automated means (such as harvesting bots, robots, spiders, or scrapers) without our prior permission."*
-
-Beyond the ToS, scraping Facebook in the EU also raises serious **GDPR concerns** — group posts contain personal data (names, phone numbers, photos) of real people who consented to share within a community, not to be indexed by a third party. Meta has actively litigated against scrapers and won.
-
-So Facebook groups remain a known data gap we acknowledge but cannot close programmatically. The partial workaround used here is **manual collection** — physically reading group posts and adding entries by hand — which is time-consuming but legally sound.
-
-### Future direction: Mobile-first
-
-A natural next step for this project is a **mobile app or progressive web app (PWA)**. The reason is simple:
-
-- The communities described above are predominantly **mobile-only internet users** — smartphones are the primary (sometimes only) device
-- Salon discovery is a task people do on the go, not at a desk
-- A PWA would also allow push notifications for new salon listings in a user's district — something the current web app can't do
-
-This would not require a full React Native rewrite; Next.js already supports PWA configuration via `next-pwa`, making it a relatively low-effort upgrade with high community impact.
+One more thing worth flagging: most of the people this app is actually for are on their phones. Not laptops. A PWA version with push notifications for new listings in your district would make this a lot more useful for the communities it's trying to serve. Next.js supports it via `next-pwa` so it's not even a big lift.
 
 ---
 
@@ -73,7 +56,7 @@ warsaw-salon-explorer/
 │   ├── osm_scraper.py             # Free fallback: OpenStreetMap Overpass API
 │   ├── google_places_scraper.py   # Enrichment: Google Places API (optional)
 │   ├── clean.py                   # Normalisation, dedup, quality report
-│   ├── run_all.py                 # Master runner
+│   ├── run_all.py                 # Master runner (OSM → Booksy → Google → clean)
 │   └── requirements.txt
 │
 ├── backend/          # Kotlin + Ktor REST API
@@ -148,13 +131,13 @@ export GOOGLE_API_KEY="your_key_here"
 python run_all.py
 ```
 
-This writes `data/salons.db`. Expected output: **~3,950 salons** across 18 Warsaw districts (523 duplicates removed via fuzzy dedup).
+This writes `data/salons.db`. Expected output: **~3,235 salons** across Warsaw districts (97 duplicates removed via fuzzy dedup).
 
 #### 2. Backend API (Kotlin / Ktor)
 
 ```bash
 cd backend
-./gradlew run
+.\gradlew.bat run  
 # API available at http://localhost:8080
 ```
 
@@ -213,13 +196,12 @@ The scrapers are a one-time ETL step, not part of the running application.
 | **Booksy** | 1,305 | Dominant booking platform in Poland — richest structured data (services, ratings, pricing) |
 | **OpenStreetMap** | 1,368 | Free, no API key, excellent coverage of informal / community-run salons not on Booksy |
 | **Google Places** | 1,264 | Gap-fill + rating enrichment for high-value records |
-| **Manual** | 13 | Community salons (Vietnamese, Ukrainian, Afro, Hindi) found via Facebook groups and Instagram — not present on any platform |
 
 **Why Booksy as primary?**
 Booksy is the de-facto booking standard in Poland with very high adoption among professional salons. It provides structured service menus, real booking-based ratings (harder to fake), and consistent address formatting.
 
 **Known data gap:**
-A significant number of informal salons — especially those serving non-Polish immigrant communities — operate entirely through word-of-mouth, WhatsApp, or private Facebook groups. These are invisible to all platforms. We acknowledge this in the `source` column and in the quality report, and partially address it via manual collection.
+A significant number of informal salons — especially those serving non-Polish immigrant communities — operate entirely through word-of-mouth, WhatsApp, or private Facebook groups. These are invisible to all platforms and are acknowledged in the quality report.
 
 ### Backend — Kotlin + Ktor
 
@@ -245,13 +227,15 @@ A significant number of informal salons — especially those serving non-Polish 
 
 4. **Price range** — Not returned by Booksy's `/core/v2/customer_api/businesses/` endpoint; individual business detail requests would be needed to surface it.
 
-5. **Scalability to all of Poland** — See section below.
+5. **Beauty course listings** — This one came directly from browsing the Facebook groups while researching the project. I kept seeing posts advertising short beauty courses — nail art, lash extensions, brow lamination — taught by instructors in the Ukrainian and Vietnamese communities, often out of a home studio, priced accessibly, and posted in Ukrainian or Vietnamese. It was striking how much of this activity exists and how completely invisible it is to any structured platform. None of it is on Booksy, Google, or OSM. A natural extension would be a dedicated **Courses** section alongside the salon listings, where people can discover upcoming workshops. The data model would add fields like `course_type`, `instructor`, `date`, `price`, and `language_of_instruction`. Since we can't scrape Facebook for the legal reasons described above, the most practical path is a **community submission form** — a simple page where instructors post their own courses, which get reviewed and published. Keeps the data clean while surfacing content that no API will ever reach.
+
+6. **Scalability to all of Poland** — See section below.
 
 ---
 
 ## 🇵🇱 Scaling to All of Poland
 
-The current architecture handles Warsaw (~3,950 salons). To cover all of Poland (~150,000+ salons) I would:
+The current architecture handles Warsaw (~3,235 salons). To cover all of Poland (~150,000+ salons) I would:
 
 1. **Parallelise the scraper** — replace sequential district loops with an async task queue (Celery or simple `asyncio` + `aiohttp`). Each city/district becomes a job.
 
@@ -269,42 +253,41 @@ The current architecture handles Warsaw (~3,950 salons). To cover all of Poland 
 
 ## 📊 Data Quality
 
-After scraping and cleaning, the dataset has **3,950 salons** across Warsaw.
+After scraping and cleaning, the dataset has **3,235 salons** across Warsaw (97 duplicates removed).
 
 ### Missing Data
 
 | Field | Missing | Coverage |
 |-------|---------|----------|
-| `price_range` | 3937 / 3950 | 0% ⚠️ |
-| `phone` | 2557 / 3950 | 35% |
-| `services` | 2450 / 3950 | 38% |
-| `website` | 1667 / 3950 | 58% |
-| `rating` | 1483 / 3950 | 62% |
-| `coordinates` | 0 / 3950 | 100% ✅ |
+| `price_range` | 3235 / 3235 | 0% ⚠️ |
+| `services` | 2528 / 3235 | 22% |
+| `phone` | 2004 / 3235 | 38% |
+| `website` | 1019 / 3235 | 69% |
+| `rating` | 754 / 3235 | 77% |
+| `coordinates` | 0 / 3235 | 100% ✅ |
 
 ### Sources
 
 | Source | Count |
 |--------|-------|
-| OSM | 1,368 |
-| Booksy | 1,305 |
-| Google | 1,264 |
-| Manual | 13 |
+| Booksy | 1,312 |
+| Google | 1,274 |
+| OSM | 649 |
 
 ### Top 10 Districts
 
 | District | Salons |
 |----------|--------|
-| Śródmieście | 547 |
-| Mokotów | 461 |
-| Ursynów | 356 |
-| Praga-Południe | 313 |
-| Białołęka | 238 |
-| Wola | 211 |
-| Bemowo | 209 |
-| Targówek | 205 |
-| Ursus | 201 |
-| Bielany | 172 |
+| Mokotów | 471 |
+| Wola | 352 |
+| Praga-Południe | 306 |
+| Białołęka | 199 |
+| Targówek | 186 |
+| Śródmieście | 182 |
+| Ursus | 180 |
+| Bielany | 170 |
+| Bemowo | 154 |
+| Wilanów | 154 |
 
 > **Known gap:** `price_range` is unavailable from Booksy's `/core/v2/customer_api/businesses/` endpoint — individual business detail requests would be needed.  
 > Run `python scraper/clean.py` to regenerate this report.
