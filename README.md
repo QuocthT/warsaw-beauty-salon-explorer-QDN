@@ -10,7 +10,7 @@ Built as part of the **SumUp Warsaw Accelerator 2026** take-home challenge.
 
 Click the video below to watch a 4-minute walkthrough of the Warsaw Beauty Salon Explorer, including the map view, data sources, and the text-filtering helper:
 
-https://github.com/user-attachments/assets/43bbea80-ed62-433c-afbb-70b586f87846
+https://github.com/user-attachments/assets/8bc1d156-f4c5-4d73-82f4-baf3b429d3c2
 
 ---
 
