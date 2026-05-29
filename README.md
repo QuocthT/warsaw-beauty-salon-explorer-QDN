@@ -137,7 +137,7 @@ This writes `data/salons.db`. Expected output: **~3,235 salons** across Warsaw d
 
 ```bash
 cd backend
-.\gradlew.bat run  
+.\gradlew.bat run   # Windows
 # API available at http://localhost:8080
 ```
 
